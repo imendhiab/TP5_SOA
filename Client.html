@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client WebSocket</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #messages { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; margin-top: 10px; }
+        input { width: 80%; padding: 8px; margin: 5px; }
+        button { padding: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Client WebSocket</h2>
+    <input type="text" id="username" placeholder="Votre pseudo">
+    <input type="text" id="roomId" placeholder="ID de la salle">
+    <br>
+    <input type="text" id="messageInput" placeholder="Entrez votre message...">
+    <button onclick="sendMessage()">Envoyer</button>
+    <div id="messages"></div>
+
+    <script>
+        const socket = new WebSocket("ws://localhost:9090");
+        const messagesDiv = document.getElementById("messages");
+        
+        socket.onopen = function() {
+            messagesDiv.innerHTML += "<p><strong>✅ Connecté au serveur WebSocket</strong></p>";
+           
+        };
+        
+        socket.onmessage = function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.chat_message) {
+                    messagesDiv.innerHTML += `<p><strong>${message.chat_message.sender_id}:</strong> ${message.chat_message.content}</p>`;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            } catch (err) {
+                console.error("Erreur lors du traitement du message :", err);
+            }
+        };
+        
+        socket.onclose = function() {
+            messagesDiv.innerHTML += "<p><strong>❌ Déconnecté du serveur</strong></p>";
+        };
+
+        function sendMessage() {
+            const username = document.getElementById("username").value.trim();
+            const roomId = document.getElementById("roomId").value.trim();
+            const input = document.getElementById("messageInput");
+
+            if (!username || !roomId || !input.value.trim()) {
+                alert("Veuillez remplir tous les champs !");
+                return;
+            }
+
+            const message = {
+                chat_message: {
+                    id: "msg_" + Date.now(),
+                    room_id: roomId,
+                    sender_id: username,
+                    content: input.value
+                }
+            };
+
+            socket.send(JSON.stringify(message));
+            messagesDiv.innerHTML += `<p><strong>Moi:</strong> ${input.value}</p>`;
+messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll automatique vers le bas
+
+            input.value = "";
+        }
+    </script>
+</body>
+</html>
